@@ -107,6 +107,7 @@ static void HandleA5Command(Message* message);
 /*************************** Enter your code here ****************************/
 // TODO: Prototype for custom command handler.
 static void HandleG3Command(Message* message)
+static void HandleD1Command(Message* message)
 
 /*****************************************************************************/
 static void HandleUnknownCommand(const char* command);
@@ -372,8 +373,10 @@ static void CommandProcessorTask( void *pvParameters )
 /*************************** Enter your code here ****************************/
 			// TODO: Add the condition to handle your custom command
 			//       and call its corresponding handler function here.
-            } else if(strcmp(command, "G3") == 0){
-				HandleG3Command(&message);
+            } else if(strcmp(command, "F3") == 0){
+				HandleF3Command(&message);
+            } else if(strcmp(command, "D1") == 0){
+				HandleD1Command(&message);
 /*****************************************************************************/
             } else {
             	HandleUnknownCommand(command);
@@ -430,8 +433,22 @@ static void GreenLedControllerTask( void *pvParameters )
                     break;
                 }
 
-                case 'r':
-                    break;
+                case 'r':{ // Random walk effect
+                const uint8_t max_led = 7; // Assuming 8-bit LED display (0 to 7)
+
+                while(1) {
+                    uint8_t randomPosition = rand() % 8; // Random LED between 0 and 7
+                    greenLedsValue = (1 << randomPosition); // Light up only one LED
+                    XGpio_DiscreteWrite(&greenLedGpio, 1, greenLedsValue);
+                    vTaskDelay(pdMS_TO_TICKS(300)); // Delay to see the effect
+
+                    // If a new command comes in, exit the loop
+                    if (uxQueueMessagesWaiting(xGreenLedQueue) > 0) {
+                        break;
+                    }
+                }
+                break;
+            }
 
                 case 'Q':
                     greenLedsValue = 0;
@@ -520,11 +537,19 @@ static void HandleA5Command(Message* message)
 
 /*************************** Enter your code here ****************************/
 // TODO: Write a command handler function for your custom command.
-static void HandleG3Command(Message* message)
+static void HandleF3Command(Message* message)
 {
     message->type = 's';
     xQueueSend(xGreenLedQueue, message, 0);
-    xil_printf("\n----------G3----------\ngreen LEDs values set\n");
+    xil_printf("\n----------F3----------\ngreen LEDs values set\n");
+    xil_printf("-------Finished-------\n");
+}
+
+static void HandleD1Command(Message* message)
+{
+    message->type = 'r';
+    xQueueSend(xGreenLedQueue, message, 0);
+    xil_printf("\n----------D1----------\ngreen LEDs values set\n");
     xil_printf("-------Finished-------\n");
 }
 /*****************************************************************************/
