@@ -40,6 +40,7 @@
 #define KYPD_DEVICE_ID   	XPAR_AXI_KEYPAD_DEVICE_ID
 /*************************** Enter your code here ****************************/
 // TODO: Define the seven-segment display (SSD) device id here.
+#define SSD_DEVICE_ID 		XPAR_AXI_SSD_DEVICE_ID
 
 /*****************************************************************************/
 
@@ -51,6 +52,7 @@ PmodKYPD 	KYPDInst;
 
 /*************************** Enter your code here ****************************/
 // TODO: Declare the seven-segment display peripheral here.
+XGpio	 SSDInst;
 
 /*****************************************************************************/
 
@@ -69,6 +71,12 @@ int main(void)
 
 /*************************** Enter your code here ****************************/
 	// TODO: Initialize SSD and set the GPIO direction to output.
+status = XGpio_Initialize(&SSDInst,SSD_DEVICE_ID);
+		if(status != XST_SUCCESS){
+			xil_printf("GPIO initialization for SSD failed.\r\n");
+			return XST_FAILURE;
+		}
+XGpio_SetDataDirection(&SSDInst,1,0x00);
 
 /*****************************************************************************/
 
@@ -97,6 +105,7 @@ static void keypadTask( void *pvParameters )
 /*************************** Enter your code here ****************************/
 	// TODO: Define a constant of type TickType_t named 'xDelay' and initialize
 	//       it with a value of 100 divided by portTICK_RATE_MS for the SSD delay.
+	TickType_t xDelay = 5;
 
 /*****************************************************************************/
 
@@ -113,6 +122,8 @@ static void keypadTask( void *pvParameters )
 			xil_printf("Key Pressed: %c\r\n", (char) pressed_key);
 /*************************** Enter your code here ****************************/
 		// TODO: update value of previous_key and current_key
+		previous_key = current_key;
+		current_key = pressed_key;
 
 /*****************************************************************************/
 		} else if (status == KYPD_MULTI_KEY && status != previous_status){
@@ -121,7 +132,10 @@ static void keypadTask( void *pvParameters )
 		
 /*************************** Enter your code here ****************************/
 		// TODO: display the value of `status` each time it changes
-		 
+		 if (status != previous_status){
+			xil_printf("Status Changed: %d\r\n", status);
+		}
+
 /*****************************************************************************/
 		previous_status = status;
 
@@ -131,6 +145,13 @@ static void keypadTask( void *pvParameters )
 		* using the `XGpio_DiscreteWrite` function.
 		* Add a delay between updates for persistence of vision using `vTaskDelay`.
 		*/
+		ssd_value = SSD_decode(previous_key, 0);
+		XGpio_DiscreteWrite(&SSDInst,1,ssd_value);
+		vTaskDelay(xDelay);
+		ssd_value = SSD_decode(current_key, 1);
+		XGpio_DiscreteWrite(&SSDInst,1,ssd_value);
+		vTaskDelay(xDelay);
+
 
 /*****************************************************************************/
 	}
