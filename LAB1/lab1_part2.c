@@ -120,7 +120,7 @@ static void rgb_led_task_old(void *pvParameters)
 /*************************** Enter your code here ****************************/
 // TODO: Write the second task to control the duty cycle of the RGB LED signal.
 static void rgb_led_task(void *pvParameters){
-    TickType_t period = 3000;//change period as needed for timing
+    TickType_t period = 22;//change period as needed for timing
     TickType_t onDelay;
     TickType_t offDelay;
     int duty_cycle = 0;

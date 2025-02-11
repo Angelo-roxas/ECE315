@@ -434,15 +434,14 @@ static void GreenLedControllerTask( void *pvParameters )
                 }
 
                 case 'r':{ // Random walk effect
-                const uint8_t max_led = 7; // Assuming 8-bit LED display (0 to 7)
+                const uint8_t max_led = 3; // Assuming 8-bit LED display (0 to 7)
 
                 while(1) {
-                    uint8_t randomPosition = rand() % 8; // Random LED between 0 and 7
-                    greenLedsValue = (1 << randomPosition); // Light up only one LED
+                    uint8_t randomPosition = rand() % 4; 
+                    greenLedsValue = (1 << randomPosition); 
                     XGpio_DiscreteWrite(&greenLedGpio, 1, greenLedsValue);
-                    vTaskDelay(pdMS_TO_TICKS(300)); // Delay to see the effect
+                    vTaskDelay(pdMS_TO_TICKS(300)); 
 
-                    // If a new command comes in, exit the loop
                     if (uxQueueMessagesWaiting(xGreenLedQueue) > 0) {
                         break;
                     }
@@ -531,30 +530,4 @@ static void HandleA5Command(Message* message)
 	//       by writing to the appropriate queue.
     xQueueSend(xGreenLedQueue, message, 0); //this implies no delay due to 0
 /*****************************************************************************/
-    xil_printf("\n----------A5----------\ngreen LEDs values set\n");
-    xil_printf("-------Finished-------\n");
-}
-
-/*************************** Enter your code here ****************************/
-// TODO: Write a command handler function for your custom command.
-static void HandleF3Command(Message* message)
-{
-    message->type = 's';
-    xQueueSend(xGreenLedQueue, message, 0);
-    xil_printf("\n----------F3----------\ngreen LEDs values set\n");
-    xil_printf("-------Finished-------\n");
-}
-
-static void HandleD1Command(Message* message)
-{
-    message->type = 'r';
-    xQueueSend(xGreenLedQueue, message, 0);
-    xil_printf("\n----------D1----------\ngreen LEDs values set\n");
-    xil_printf("-------Finished-------\n");
-}
-/*****************************************************************************/
-
-static void HandleUnknownCommand(const char* command)
-{
-    xil_printf("\n***Command %s is not implemented***\n", command);
-}
+    xil_printf("\n----------A5----------\ngre
