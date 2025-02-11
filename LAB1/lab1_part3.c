@@ -87,6 +87,7 @@ static QueueHandle_t xCommandQueue      = NULL;
 static QueueHandle_t xRgbLedQueue 	    = NULL;
 /*************************** Enter your code here ****************************/
 // TODO: Declare the Green LED queue.
+static QueueHandle_t xGreenLedQueue = NULL;
 
 /*****************************************************************************/
 
@@ -105,6 +106,7 @@ static void HandleE7Command(Message* message);
 static void HandleA5Command(Message* message);
 /*************************** Enter your code here ****************************/
 // TODO: Prototype for custom command handler.
+static void HandleG3Command(Message* message)
 
 /*****************************************************************************/
 static void HandleUnknownCommand(const char* command);
@@ -201,7 +203,7 @@ int main(void)
     xRgbLedQueue 	   = xQueueCreate(1, sizeof(Message));
 /*************************** Enter your code here ****************************/
 	// TODO: Create the Green LED queue.
-
+    xGreenLedQueue  = xQueueCreate(1, sizeof(Message));
 /*****************************************************************************/
 
     /* Assert queue creation */
@@ -210,6 +212,7 @@ int main(void)
 	configASSERT(xRgbLedQueue);
 /*************************** Enter your code here ****************************/
 	// TODO: Assert the Green LED queue creation.
+    configASSERT(xGreenLedQueue);
 
 /*****************************************************************************/
 
@@ -369,7 +372,8 @@ static void CommandProcessorTask( void *pvParameters )
 /*************************** Enter your code here ****************************/
 			// TODO: Add the condition to handle your custom command
 			//       and call its corresponding handler function here.
-
+            } else if(strcmp(command, "G3") == 0){
+				HandleG3Command(&message);
 /*****************************************************************************/
             } else {
             	HandleUnknownCommand(command);
@@ -394,24 +398,47 @@ static void GreenLedControllerTask( void *pvParameters )
 	while(1){
 /*************************** Enter your code here ****************************/
 		// TODO: Wait until a message is received from the Green LED queue.
+        if (xQueueReceive(xGreenLedQueue, &receivedMessage, portMAX_DELAY) == pdTRUE) {
 
 /*****************************************************************************/
-		switch(message.type){
-            case 'a': // set the green LEDs to the values of the switches
-				greenLedsValue = XGpio_DiscreteRead(&switchGpio, 2);
-				break;
+            switch(message.type){
+                case 'a': // set the green LEDs to the values of the switches
+                    greenLedsValue = XGpio_DiscreteRead(&switchGpio, 2);
+                    break;
 
-            case 's':
-			    break;
+                case 's':{ // Bouncing dot effect
+                uint8_t position = 0; // Start at the leftmost LED
+                int8_t direction = 1; // Moving right initially
+                const uint8_t max_led = 7; // Assuming an 8-bit LED display (0 to 7)
+                                            // double check how many green LEDS there are
 
-            case 'r':
-                break;
+                while(1) {
+                    greenLedsValue = (1 << position); // Set only one LED at a time
+                    XGpio_DiscreteWrite(&greenLedGpio, 1, greenLedsValue);
+                    vTaskDelay(pdMS_TO_TICKS(200)); // Delay for visibility
 
-            case 'Q':
-            	greenLedsValue = 0;
-            	break;
-        }
-   		XGpio_DiscreteWrite(&greenLedGpio, 1, greenLedsValue);
+                    position += direction;
+                    if (position == 0 || position == max_led) {
+                        direction = -direction; // Reverse direction
+                    }
+                    
+                    // If a new command comes in, exit the loop
+                    if (uxQueueMessagesWaiting(xGreenLedQueue) > 0) {
+                        break;
+                        }
+                    }
+                    break;
+                }
+
+                case 'r':
+                    break;
+
+                case 'Q':
+                    greenLedsValue = 0;
+                    break;
+            }
+            XGpio_DiscreteWrite(&greenLedGpio, 1, greenLedsValue);
+        }    
 	}
 }
 
@@ -485,7 +512,7 @@ static void HandleA5Command(Message* message)
 /*************************** Enter your code here ****************************/
 	// TODO: Send the command message to the Green LED controller
 	//       by writing to the appropriate queue.
-
+    xQueueSend(xGreenLedQueue, message, 0); //this implies no delay due to 0
 /*****************************************************************************/
     xil_printf("\n----------A5----------\ngreen LEDs values set\n");
     xil_printf("-------Finished-------\n");
@@ -493,7 +520,13 @@ static void HandleA5Command(Message* message)
 
 /*************************** Enter your code here ****************************/
 // TODO: Write a command handler function for your custom command.
-
+static void HandleG3Command(Message* message)
+{
+    message->type = 's';
+    xQueueSend(xGreenLedQueue, message, 0);
+    xil_printf("\n----------G3----------\ngreen LEDs values set\n");
+    xil_printf("-------Finished-------\n");
+}
 /*****************************************************************************/
 
 static void HandleUnknownCommand(const char* command)
