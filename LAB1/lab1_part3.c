@@ -412,19 +412,17 @@ static void GreenLedControllerTask( void *pvParameters )
                 case 's':{ // Bouncing dot effect
                 uint8_t position = 0; // Start at the leftmost LED
                 int8_t direction = 1; // Moving right initially
-                const uint8_t max_led = 7; // Assuming an 8-bit LED display (0 to 7)
+                const uint8_t max_led = 3; // Assuming an 4-bit LED display (0 to 3)
                                             // double check how many green LEDS there are
 
                 while(1) {
                     greenLedsValue = (1 << position); // Set only one LED at a time
                     XGpio_DiscreteWrite(&greenLedGpio, 1, greenLedsValue);
-                    vTaskDelay(pdMS_TO_TICKS(200)); // Delay for visibility
-
+                    vTaskDelay(pdMS_TO_TICKS(200)); // Delay 
                     position += direction;
                     if (position == 0 || position == max_led) {
                         direction = -direction; // Reverse direction
                     }
-                    
                     // If a new command comes in, exit the loop
                     if (uxQueueMessagesWaiting(xGreenLedQueue) > 0) {
                         break;
@@ -434,7 +432,7 @@ static void GreenLedControllerTask( void *pvParameters )
                 }
 
                 case 'r':{ // Random walk effect
-                const uint8_t max_led = 3; // Assuming 8-bit LED display (0 to 7)
+                const uint8_t max_led = 3; // Assuming 4-bit LED display (0 to 3)
 
                 while(1) {
                     uint8_t randomPosition = rand() % 4; 
